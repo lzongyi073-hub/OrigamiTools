@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>和風摺紙圖解工坊｜AI 摺紙步驟拆解與示意圖生成</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Noto Serif TC & Noto Sans TC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                        serif: ['"Noto Serif TC"', 'serif'],
+                    },
+                    colors: {
+                        washi: {
+                            bg: '#FAF7F0',       // 溫暖米白和紙底色
+                            card: '#FFFDF9',     // 卡片亮白紙色
+                            border: '#E6DFD1',   // 紙張邊線
+                            ink: '#2C2A29',      // 墨黑文字
+                            muted: '#6E6A63',    // 灰褐次要文字
+                            indigo: '#2B4C7E',   // 藍染靛藍
+                            vermilion: '#C84B31',// 鳥居朱紅
+                            matcha: '#5A7D5B',   // 抹茶綠
+                            ochre: '#D9A05B',    // 黃土木質色
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* 和紙紋理與客製化細節 */
+        body {
+            background-color: #FAF7F0;
+            background-image: 
+                radial-gradient(rgba(217, 160, 91, 0.08) 1px, transparent 0),
+                radial-gradient(rgba(43, 76, 126, 0.05) 1px, transparent 0);
+            background-size: 28px 28px;
+            background-position: 0 0, 14px 14px;
+            color: #2C2A29;
+        }
+
+        /* 紙張陰影與折角效果 */
+        .washi-card {
+            background-color: #FFFDF9;
+            border: 1px solid #E6DFD1;
+            box-shadow: 0 8px 24px -6px rgba(44, 42, 41, 0.07), 0 2px 6px -1px rgba(44, 42, 41, 0.04);
+            position: relative;
+        }
+
+        .folded-corner {
+            position: relative;
+            overflow: hidden;
+        }
+        .folded-corner::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 28px 28px 0;
+            border-color: transparent #FAF7F0 transparent transparent;
+            box-shadow: -2px 2px 4px rgba(0,0,0,0.06);
+        }
+
+        /* SVG 繪圖區格線背景（模擬切割墊） */
+        .cutting-mat-bg {
+            background-color: #F4F1EA;
+            background-image: 
+                linear-gradient(to right, rgba(90, 125, 91, 0.12) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(90, 125, 91, 0.12) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* 平滑過渡動畫 */
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 摺紙載入動畫 */
+        @keyframes foldPulse {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.08) rotate(6deg); }
+        }
+        .animate-fold {
+            animation: foldPulse 2s infinite ease-in-out;
+        }
+
+        /* 列印與匯出純圖文教學單專用樣式 */
+        @media print {
+            body {
+                background: #FFFFFF !important;
+                background-image: none !important;
+                color: #000000 !important;
+            }
+            header, #inputSection, #loadingSection, #stepViewContainer, #viewModeSwitcher, #printActionGroup, .no-print, footer {
+                display: none !important;
+            }
+            #resultSection {
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            #allViewContainer {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 16px !important;
+            }
+            .washi-card {
+                box-shadow: none !important;
+                border: 1px solid #CCCCCC !important;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            .cutting-mat-bg {
+                background: #F9F9F9 !important;
+                background-image: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-washi-ochre/30">
+
+    <!-- 頂部導覽列 -->
+    <header class="w-full border-b border-washi-border bg-washi-card/90 backdrop-blur-sm sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <!-- 摺紙鶴 Logo SVG -->
+                <div class="w-10 h-10 rounded-xl bg-washi-vermilion text-white flex items-center justify-center shadow-sm">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3L4 13l8 3 8-3-8-10z"/>
+                        <path d="M12 16v5l-3-2"/>
+                        <path d="M4 13l-2-4 5 2"/>
+                        <path d="M20 13l2-4-5 2"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-serif text-lg sm:text-xl font-bold tracking-wide text-washi-ink">和風摺紙圖解工坊</h1>
+                    <p class="text-xs text-washi-muted hidden sm:block">看懂每一道折痕的幾何美學・純圖文逐步拆解</p>
+                </div>
+            </div>
+
+            <button onclick="toggleLegendModal()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-washi-border bg-washi-bg hover:bg-washi-ochre/15 text-washi-ink text-xs sm:text-sm font-medium transition cursor-pointer">
+                <svg class="w-4 h-4 text-washi-indigo" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>摺紙符號圖例</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主內容區 -->
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
+
+        <!-- 訊息提示框 (取代 alert) -->
+        <div id="toastBox" class="hidden fixed bottom-5 right-5 z-50 max-w-sm bg-washi-ink text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 fade-in no-print">
+            <span id="toastIcon" class="text-washi-ochre font-bold">!</span>
+            <p id="toastMessage" class="text-sm leading-snug"></p>
+        </div>
+
+        <!-- 區塊 1：圖文雙重精準校準區 -->
+        <section id="inputSection" class="washi-card folded-corner rounded-2xl p-5 sm:p-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+                
+                <!-- 左側：圖片上傳與範例選擇 -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-serif text-lg font-bold text-washi-ink flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-washi-indigo text-white text-xs flex items-center justify-center font-sans">1</span>
+                            上傳最喜歡的摺紙圖片
+                        </h2>
+                        <button id="clearImgBtn" onclick="clearImage()" class="hidden text-xs text-washi-vermilion hover:underline cursor-pointer">清除重選</button>
+                    </div>
+
+                    <!-- 拖曳 / 點擊 / 貼上 上傳區 -->
+                    <div id="dropZone" tabindex="0" class="relative group border-2 border-dashed border-washi-border hover:border-washi-indigo rounded-2xl bg-washi-bg/60 transition-all min-h-[250px] flex flex-col items-center justify-center p-6 text-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-washi-indigo/40">
+                        <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                        
+                        <!-- 預設上傳提示 -->
+                        <div id="uploadPlaceholder" class="space-y-3">
+                            <div class="w-14 h-14 mx-auto rounded-2xl bg-washi-card border border-washi-border flex items-center justify-center text-washi-indigo shadow-sm group-hover:scale-105 transition-transform">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm sm:text-base font-bold text-washi-ink">點擊選擇圖片、拖曳至此，或 Ctrl+V 貼上</p>
+                                <p class="text-xs text-washi-muted mt-1">搭配右側文字描述，大幅提升幾何拆解精準度</p>
+                            </div>
+                            <div class="pt-1">
+                                <button type="button" id="selectFileBtn" class="px-4 py-2 rounded-xl bg-washi-indigo hover:bg-[#213b63] text-white text-xs sm:text-sm font-bold shadow-sm transition inline-flex items-center gap-1.5 cursor-pointer">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                    </svg>
+                                    <span>選擇本機圖片檔案</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 預覽圖片容器 -->
+                    <div id="previewContainer" class="hidden w-full flex flex-col items-center">
+                        <img id="imagePreview" src="" alt="摺紙成品預覽" class="max-h-[240px] w-auto rounded-xl shadow-sm border border-washi-border object-contain bg-white">
+                        <div class="mt-2.5 flex items-center gap-2">
+                            <span id="imageSourceTag" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-washi-matcha/15 text-washi-matcha">
+                                已載入圖片
+                            </span>
+                            <button type="button" id="reselectFileBtn" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-washi-indigo/10 text-washi-indigo hover:bg-washi-indigo/20 transition cursor-pointer">
+                                更換圖片
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 內建經典範例快捷列 -->
+                <div class="space-y-2 pt-1">
+                    <p class="text-xs font-medium text-washi-muted">手邊剛好沒有照片？點選下方經典範例體驗圖文雙重解析：</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="loadSample('crane')" class="py-2 px-2.5 rounded-xl border border-washi-border bg-washi-bg hover:bg-washi-ochre/15 hover:border-washi-ochre text-xs font-medium text-washi-ink transition flex flex-col items-center gap-1 cursor-pointer">
+                            <span class="text-base">🦢</span>
+                            <span>經典千紙鶴</span>
+                        </button>
+                        <button type="button" onclick="loadSample('heart')" class="py-2 px-2.5 rounded-xl border border-washi-border bg-washi-bg hover:bg-washi-ochre/15 hover:border-washi-ochre text-xs font-medium text-washi-ink transition flex flex-col items-center gap-1 cursor-pointer">
+                            <span class="text-base">❤️</span>
+                            <span>愛心角書籤</span>
+                        </button>
+                        <button type="button" onclick="loadSample('fox')" class="py-2 px-2.5 rounded-xl border border-washi-border bg-washi-bg hover:bg-washi-ochre/15 hover:border-washi-ochre text-xs font-medium text-washi-ink transition flex flex-col items-center gap-1 cursor-pointer">
+                            <span class="text-base">🦊</span>
+                            <span>立體小狐狸</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側：文字補充精準校準區 -->
+            <div class="lg:col-span-7 flex flex-col justify-between space-y-5">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-serif text-lg font-bold text-washi-ink flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-washi-indigo text-white text-xs flex items-center justify-center font-sans">2</span>
+                            補充文字條件，讓幾何推演更精確
+                        </h2>
+                        <span class="text-[11px] px-2 py-0.5 rounded-md bg-washi-indigo/10 text-washi-indigo font-bold">選填・大幅提升準確率</span>
+                    </div>
+
+                    <!-- 作品名稱與起始紙張比例 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label for="workTitleInput" class="block text-xs font-bold text-washi-ink mb-1.5">作品名稱 / 目標造型</label>
+                            <input type="text" id="workTitleInput" placeholder="例如：千紙鶴、立體愛心、武士頭盔..." class="w-full rounded-xl border border-washi-border bg-washi-bg/50 px-3.5 py-2.5 text-sm text-washi-ink placeholder:text-washi-muted/60 focus:outline-none focus:border-washi-indigo focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label for="baseTypeSelect" class="block text-xs font-bold text-washi-ink mb-1.5">起始紙張與基礎摺法</label>
+                            <select id="baseTypeSelect" class="w-full rounded-xl border border-washi-border bg-washi-bg/50 px-3 py-2.5 text-sm text-washi-ink focus:outline-none focus:border-washi-indigo focus:bg-white transition cursor-pointer">
+                                <option value="auto">自動判讀（預設）</option>
+                                <option value="square">正方形色紙（1:1 標準比例）</option>
+                                <option value="rectangle">長方形紙張（A4 / 鈔票比例）</option>
+                                <option value="bird_base">鶴基本形（Bird Base）</option>
+                                <option value="square_base">雙正方形基礎（Square Base）</option>
+                                <option value="waterbomb_base">雙三角形基礎（Waterbomb Base）</option>
+                                <option value="windmill_base">風車基本形（Windmill Base）</option>
+                                <option value="modular">多張色紙組合（單元組裝）</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 拆解細膩度選擇 -->
+                    <div>
+                        <label class="block text-xs font-bold text-washi-ink mb-1.5">步驟拆解細膩度</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="difficulty" value="beginner" checked class="peer sr-only">
+                                <div class="p-3 rounded-xl border border-washi-border bg-washi-bg/50 peer-checked:border-washi-indigo peer-checked:bg-washi-indigo/8 transition">
+                                    <div class="font-bold text-xs sm:text-sm text-washi-ink">🌱 新手詳盡版（不跳步）</div>
+                                    <div class="text-[11px] text-washi-muted mt-0.5">完整繪出預摺痕、對角線與過渡步驟</div>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="difficulty" value="advanced" class="peer sr-only">
+                                <div class="p-3 rounded-xl border border-washi-border bg-washi-bg/50 peer-checked:border-washi-indigo peer-checked:bg-washi-indigo/8 transition">
+                                    <div class="font-bold text-xs sm:text-sm text-washi-ink">🎋 進階精簡版</div>
+                                    <div class="text-[11px] text-washi-muted mt-0.5">合併基礎預摺，聚焦關鍵幾何轉換</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 結構特徵文字補充與快捷標籤 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label for="userNotes" class="block text-xs font-bold text-washi-ink">結構特徵與細節描述（推薦填寫）</label>
+                            <span class="text-[11px] text-washi-muted">點擊下方標籤快速帶入</span>
+                        </div>
+                        <textarea id="userNotes" rows="3" placeholder="例如：使用正面橘色、背面白色的雙面色紙；頭部有白色臉頰翻出；底部有三角形底座可以站立..." class="w-full rounded-xl border border-washi-border bg-washi-bg/50 p-3 text-sm text-washi-ink placeholder:text-washi-muted/60 focus:outline-none focus:border-washi-indigo focus:bg-white transition"></textarea>
+                        
+                        <div class="flex flex-wrap gap-1.5 mt-2">
+                            <button type="button" onclick="appendTag('雙面雙色紙（正面彩色、背面白色）')" class="px-2.5 py-1 rounded-lg bg-washi-bg hover:bg-washi-ochre/15 border border-washi-border text-[11px] font-medium text-washi-ink transition cursor-pointer">+ #雙面雙色紙</button>
+                            <button type="button" onclick="appendTag('包含內部反摺（Inside Reverse Fold）')" class="px-2.5 py-1 rounded-lg bg-washi-bg hover:bg-washi-ochre/15 border border-washi-border text-[11px] font-medium text-washi-ink transition cursor-pointer">+ #內部反摺</button>
+                            <button type="button" onclick="appendTag('需要撐開壓平（Squash Fold）')" class="px-2.5 py-1 rounded-lg bg-washi-bg hover:bg-washi-ochre/15 border border-washi-border text-[11px] font-medium text-washi-ink transition cursor-pointer">+ #撐開壓平</button>
+                            <button type="button" onclick="appendTag('立體中空膨脹造型')" class="px-2.5 py-1 rounded-lg bg-washi-bg hover:bg-washi-ochre/15 border border-washi-border text-[11px] font-medium text-washi-ink transition cursor-pointer">+ #立體中空膨脹</button>
+                            <button type="button" onclick="appendTag('可平穩站立於桌面')" class="px-2.5 py-1 rounded-lg bg-washi-bg hover:bg-washi-ochre/15 border border-washi-border text-[11px] font-medium text-washi-ink transition cursor-pointer">+ #可站立底座</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 生成按鈕 -->
+                <div class="pt-1">
+                    <button id="analyzeBtn" onclick="analyzeOrigami()" class="w-full py-3.5 px-6 rounded-xl bg-washi-vermilion hover:bg-[#b53f27] active:scale-[0.99] text-white font-bold text-base shadow-md shadow-washi-vermilion/20 transition flex items-center justify-center gap-2.5 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                        <span>執行圖文雙重推演（生成精準圖解）</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+        <!-- 載入中狀態區 -->
+        <section id="loadingSection" class="hidden washi-card rounded-2xl p-10 text-center space-y-4 fade-in">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-washi-indigo/10 text-washi-indigo flex items-center justify-center animate-fold">
+                <svg class="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                    <line x1="12" y1="22" x2="12" y2="15.5"/>
+                    <polyline points="22 8.5 12 15.5 2 8.5"/>
+                </svg>
+            </div>
+            <h3 class="font-serif text-xl font-bold text-washi-ink">正在進行結構逆向工程與幾何推演...</h3>
+            <p class="text-sm text-washi-muted max-w-md mx-auto">結合您提供的圖片與文字條件，正在反推紙張比例、核心基礎型（Base），並繪製連貫的 SVG 谷摺與山摺圖解。</p>
+        </section>
+
+        <!-- 區塊 2：圖文步驟結果展示區 -->
+        <section id="resultSection" class="hidden space-y-6 fade-in">
+            
+            <!-- 結構逆向診斷卡與操作標頭 -->
+            <div class="washi-card rounded-2xl p-5 sm:p-7 border-l-4 border-l-washi-indigo space-y-5">
+                <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                    <div class="space-y-2">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-md bg-washi-indigo text-white text-xs font-bold">結構逆向診斷完成</span>
+                            <span id="resultDifficultyBadge" class="px-2.5 py-0.5 rounded-md bg-washi-ochre/20 text-washi-ink text-xs font-bold">難度：入門</span>
+                            <span id="resultStepCountBadge" class="px-2.5 py-0.5 rounded-md bg-washi-matcha/15 text-washi-matcha text-xs font-bold">共 8 步驟</span>
+                        </div>
+                        <h2 id="resultTitle" class="font-serif text-2xl sm:text-3xl font-bold text-washi-ink">經典千紙鶴</h2>
+                        <p id="resultSummary" class="text-sm text-washi-muted leading-relaxed max-w-3xl"></p>
+                    </div>
+
+                    <!-- 右上功能操作組：列印匯出 + 檢視模式切換 -->
+                    <div class="flex flex-wrap items-center gap-2.5 self-start shrink-0 no-print">
+                        <button id="printActionGroup" onclick="printTutorial()" class="px-3.5 py-2 rounded-xl border border-washi-border bg-washi-bg hover:bg-washi-ochre/20 text-washi-ink text-xs sm:text-sm font-bold transition flex items-center gap-1.5 cursor-pointer">
+                            <svg class="w-4 h-4 text-washi-vermilion" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                            <span>列印 / 匯出純圖文教學單</span>
+                        </button>
+
+                        <div id="viewModeSwitcher" class="flex items-center bg-washi-bg p-1 rounded-xl border border-washi-border">
+                            <button id="modeStepBtn" onclick="setViewMode('step')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-white text-washi-indigo shadow-sm cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                <span>逐步翻頁</span>
+                            </button>
+                            <button id="modeAllBtn" onclick="setViewMode('all')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 text-washi-muted hover:text-washi-ink cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                                <span>全覽列表</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 結構逆向工程診斷四宮格 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-washi-border/70">
+                    <div class="p-3 rounded-xl bg-washi-bg/70 border border-washi-border/60">
+                        <div class="text-[11px] font-bold text-washi-muted uppercase">📐 建議紙張與比例</div>
+                        <div id="diagPaperSize" class="text-sm font-bold text-washi-ink mt-1">15×15cm 正方形色紙</div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-washi-bg/70 border border-washi-border/60">
+                        <div class="text-[11px] font-bold text-washi-muted uppercase">🎨 正反面配色建議</div>
+                        <div id="diagColorScheme" class="text-sm font-bold text-washi-ink mt-1">正面朱紅 / 背面純白</div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-washi-bg/70 border border-washi-border/60">
+                        <div class="text-[11px] font-bold text-washi-muted uppercase"> origami 核心基礎型 (Base)</div>
+                        <div id="diagCoreBase" class="text-sm font-bold text-washi-indigo mt-1">鶴基本形 (Bird Base)</div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-washi-bg/70 border border-washi-border/60">
+                        <div class="text-[11px] font-bold text-washi-muted uppercase">🧭 關鍵基準折痕</div>
+                        <div id="diagKeyCreases" class="text-sm font-bold text-washi-ink mt-1">米字線預摺痕、花瓣折</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 快捷符號說明列 -->
+            <div class="washi-card rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-4 text-xs text-washi-muted">
+                <span class="font-bold text-washi-ink">圖解線條速查：</span>
+                <div class="flex flex-wrap items-center gap-4 sm:gap-6">
+                    <span class="flex items-center gap-2">
+                        <svg class="w-8 h-3" viewBox="0 0 32 12"><line x1="0" y1="6" x2="32" y2="6" stroke="#2B4C7E" stroke-width="2" stroke-dasharray="4 3"/></svg>
+                        <span><strong class="text-washi-indigo">谷摺線</strong>（向內對摺）</span>
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <svg class="w-8 h-3" viewBox="0 0 32 12"><line x1="0" y1="6" x2="32" y2="6" stroke="#C84B31" stroke-width="2" stroke-dasharray="7 2 2 2"/></svg>
+                        <span><strong class="text-washi-vermilion">山摺線</strong>（向後反摺）</span>
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <svg class="w-8 h-3" viewBox="0 0 32 12"><line x1="0" y1="6" x2="32" y2="6" stroke="#8C857B" stroke-width="1.5"/></svg>
+                        <span><strong>已壓折痕</strong>（參考基準線）</span>
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <svg class="w-6 h-4" viewBox="0 0 24 16"><path d="M3 12 Q12 2 21 10" fill="none" stroke="#C84B31" stroke-width="2"/><polygon points="21,10 16,10 19,6" fill="#C84B31"/></svg>
+                        <span><strong>摺疊方向箭頭</strong></span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- 模式 A：逐步檢視模式 (Step-by-step Flipbook) -->
+            <div id="stepViewContainer" class="space-y-5">
+                <!-- 進度條與步驟跳轉點 -->
+                <div class="washi-card rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between text-xs font-bold">
+                        <span id="stepProgressText" class="text-washi-indigo">第 1 步 / 共 8 步</span>
+                        <span id="stepPercentText" class="text-washi-muted">12% 完成</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-washi-bg rounded-full overflow-hidden border border-washi-border/60">
+                        <div id="stepProgressBar" class="h-full bg-washi-indigo transition-all duration-300 rounded-full" style="width: 12.5%"></div>
+                    </div>
+                    <!-- 步驟快捷按鈕列 -->
+                    <div id="stepDotsContainer" class="flex flex-wrap gap-1.5 pt-1"></div>
+                </div>
+
+                <!-- 單步主卡片 -->
+                <div id="singleStepCard" class="washi-card rounded-2xl overflow-hidden">
+                    <!-- 由 JS 動態填入當前步驟 -->
+                </div>
+
+                <!-- 上一步 / 下一步 大按鈕控制列 -->
+                <div class="flex items-center justify-between gap-4">
+                    <button id="prevStepBtn" onclick="changeStep(-1)" class="flex-1 sm:flex-initial sm:min-w-[160px] py-3.5 px-5 rounded-xl border border-washi-border bg-washi-card hover:bg-washi-bg disabled:opacity-40 disabled:pointer-events-none text-washi-ink font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                        <span>上一步</span>
+                    </button>
+
+                    <button id="nextStepBtn" onclick="changeStep(1)" class="flex-1 sm:flex-initial sm:min-w-[180px] py-3.5 px-6 rounded-xl bg-washi-indigo hover:bg-[#213b63] text-white font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-md shadow-washi-indigo/20">
+                        <span id="nextStepBtnText">下一步</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 模式 B：全覽列表模式 (All Steps Grid) -->
+            <div id="allViewContainer" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 由 JS 動態填入所有步驟卡片 -->
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- 單步追問與微調彈窗 (Step Clarify Modal) -->
+    <div id="clarifyModal" class="hidden fixed inset-0 z-50 bg-washi-ink/50 backdrop-blur-xs flex items-center justify-center p-4 no-print" onclick="if(event.target === this) closeClarifyModal()">
+        <div class="washi-card rounded-2xl max-w-lg w-full p-6 space-y-4 fade-in">
+            <div class="flex items-center justify-between border-b border-washi-border pb-3">
+                <div class="flex items-center gap-2">
+                    <span id="clarifyStepBadge" class="px-2.5 py-0.5 rounded-md bg-washi-indigo text-white text-xs font-bold">步驟 1</span>
+                    <h3 class="font-serif text-lg font-bold text-washi-ink">針對這一步文字補充追問</h3>
+                </div>
+                <button onclick="closeClarifyModal()" class="p-1.5 rounded-lg hover:bg-washi-bg text-washi-muted hover:text-washi-ink cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="p-3 rounded-xl bg-washi-bg/80 border border-washi-border/70 text-xs text-washi-muted space-y-1">
+                <div class="font-bold text-washi-ink" id="clarifyCurrentTitle">當前步驟標題</div>
+                <p id="clarifyCurrentDesc" class="line-clamp-2"></p>
+            </div>
+
+            <div class="space-y-2">
+                <label for="clarifyQuestionInput" class="block text-xs font-bold text-washi-ink">請問這一步哪裡卡關或想更精確了解？</label>
+                <textarea id="clarifyQuestionInput" rows="3" placeholder="例如：請問這個尖角是要「往內沈摺」還是「直接壓平」？翻面後白色面應該朝上嗎？請幫我畫得更詳細並拆成更細的過渡步驟。" class="w-full rounded-xl border border-washi-border bg-white p-3 text-sm text-washi-ink placeholder:text-washi-muted/60 focus:outline-none focus:border-washi-indigo transition"></textarea>
+                
+                <!-- 常見追問快捷按鈕 -->
+                <div class="flex flex-wrap gap-1.5 pt-1">
+                    <button type="button" onclick="setClarifyPreset('這一步變化太大了，請幫我把這一步細拆成 2 個更簡單的過渡步驟，並重畫 SVG 圖解。')" class="px-2.5 py-1 rounded-lg bg-washi-bg hover:bg-washi-indigo/10 border border-washi-border text-xs text-washi-ink cursor-pointer">拆分成更細的 2 步</button>
+                    <button type="button" onclick="setClarifyPreset('請問紙張的正反面顏色在這一步應該怎麼分佈？請在圖上標註清楚對齊點。')" class="px-2.5 py-1 rounded-lg bg-washi-bg hover:bg-washi-indigo/10 border border-washi-border text-xs text-washi-ink cursor-pointer">確認正反面與對齊點</button>
+                    <button type="button" onclick="setClarifyPreset('這裡的內部反摺（或撐開壓平）立體角度看不太懂，請用更白話的方式描述手指要從哪裡伸進去撐開。')" class="px-2.5 py-1 rounded-lg bg-washi-bg hover:bg-washi-indigo/10 border border-washi-border text-xs text-washi-ink cursor-pointer">白話解釋立體撐開動作</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2.5 pt-2">
+                <button onclick="closeClarifyModal()" class="px-4 py-2 rounded-xl border border-washi-border text-sm font-medium text-washi-muted hover:text-washi-ink cursor-pointer">取消</button>
+                <button id="submitClarifyBtn" onclick="submitStepClarification()" class="px-5 py-2 rounded-xl bg-washi-vermilion hover:bg-[#b53f27] text-white text-sm font-bold flex items-center gap-2 cursor-pointer">
+                    <span>重新推演並更新圖解</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 摺紙符號圖例說明彈窗 (Modal) -->
+    <div id="legendModal" class="hidden fixed inset-0 z-50 bg-washi-ink/50 backdrop-blur-xs flex items-center justify-center p-4 no-print" onclick="if(event.target === this) toggleLegendModal()">
+        <div class="washi-card rounded-2xl max-w-lg w-full p-6 space-y-5 fade-in">
+            <div class="flex items-center justify-between border-b border-washi-border pb-3">
+                <h3 class="font-serif text-lg font-bold text-washi-ink">國際標準摺紙符號圖例</h3>
+                <button onclick="toggleLegendModal()" class="p-1.5 rounded-lg hover:bg-washi-bg text-washi-muted hover:text-washi-ink cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div class="p-3 rounded-xl bg-washi-bg/70 border border-washi-border flex items-center gap-4">
+                    <svg class="w-16 h-6 shrink-0" viewBox="0 0 64 24"><line x1="4" y1="12" x2="60" y2="12" stroke="#2B4C7E" stroke-width="2.5" stroke-dasharray="6 4"/></svg>
+                    <div>
+                        <div class="font-bold text-washi-indigo">谷摺線（Valley Fold）</div>
+                        <p class="text-xs text-washi-muted">藍色虛線，代表沿著此線將紙張「向前／向內」對摺，形成山谷般的凹槽。</p>
+                    </div>
+                </div>
+                <div class="p-3 rounded-xl bg-washi-bg/70 border border-washi-border flex items-center gap-4">
+                    <svg class="w-16 h-6 shrink-0" viewBox="0 0 64 24"><line x1="4" y1="12" x2="60" y2="12" stroke="#C84B31" stroke-width="2.5" stroke-dasharray="9 3 2 3"/></svg>
+                    <div>
+                        <div class="font-bold text-washi-vermilion">山摺線（Mountain Fold）</div>
+                        <p class="text-xs text-washi-muted">朱紅點劃線，代表沿著此線將紙張「向後／向外」反摺，形成山峰般的稜線。</p>
+                    </div>
+                </div>
+                <div class="p-3 rounded-xl bg-washi-bg/70 border border-washi-border flex items-center gap-4">
+                    <svg class="w-16 h-6 shrink-0" viewBox="0 0 64 24"><line x1="4" y1="12" x2="60" y2="12" stroke="#9E978B" stroke-width="1.5"/></svg>
+                    <div>
+                        <div class="font-bold text-washi-ink">已壓基準折痕（Crease Line）</div>
+                        <p class="text-xs text-washi-muted">灰色細實線，代表先前步驟壓出的折痕，作為對齊或定位的參考線。</p>
+                    </div>
+                </div>
+                <div class="p-3 rounded-xl bg-washi-bg/70 border border-washi-border flex items-center gap-4">
+                    <svg class="w-16 h-6 shrink-0" viewBox="0 0 64 24"><path d="M10 18 Q32 4 54 14" fill="none" stroke="#C84B31" stroke-width="2.2"/><polygon points="54,14 47,15 51,9" fill="#C84B31"/></svg>
+                    <div>
+                        <div class="font-bold text-washi-ink">摺疊方向箭頭</div>
+                        <p class="text-xs text-washi-muted">指示紙角或紙邊移動的方向與目標落點。</p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-right">
+                <button onclick="toggleLegendModal()" class="px-5 py-2 rounded-xl bg-washi-indigo text-white text-sm font-bold cursor-pointer">我了解了</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 全域狀態管理
+        // ==========================================
+        let currentImageBase64 = null;
+        let currentImageMimeType = 'image/jpeg';
+        let currentTutorialData = null;
+        let currentStepIndex = 0;
+        let currentViewMode = 'step'; // 'step' | 'all'
+        let clarifyingStepIndex = null;
+
+        // ==========================================
+        // 內建經典範例 SVG 與對應精準文字設定
+        // ==========================================
+        const SAMPLE_DATA = {
+            crane: {
+                name: "經典千紙鶴",
+                baseType: "bird_base",
+                notes: "使用單面朱紅色、背面純白色的正方形色紙。從雙正方形基礎折出鶴基本形（花瓣折），再將兩側細長尖角分別向內反摺形成鶴頭與鶴尾，最後向外拉開雙翼。",
+                svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+                    <rect width="300" height="300" fill="#FAF7F0"/>
+                    <circle cx="150" cy="150" r="105" fill="#F2E6D8"/>
+                    <polygon points="150,185 110,145 150,125 190,145" fill="#C84B31"/>
+                    <polygon points="150,135 55,80 120,155" fill="#E06A52"/>
+                    <polygon points="150,135 245,80 180,155" fill="#B03A22"/>
+                    <polygon points="118,152 80,65 102,148" fill="#C84B31"/>
+                    <polygon points="80,65 55,78 83,78" fill="#A3321B"/>
+                    <polygon points="182,152 225,60 196,148" fill="#C84B31"/>
+                    <text x="150" y="275" font-family="sans-serif" font-size="14" fill="#6E6A63" text-anchor="middle">範例作品：和風千紙鶴</text>
+                </svg>`
+            },
+            heart: {
+                name: "愛心角書籤",
+                baseType: "square",
+                notes: "正方形色紙（正面粉紅、背面白色）。先摺出雙三角形基礎或三角口袋結構，將下方口袋翻折固定後，把上方兩片三角形左右對稱向內收角與山摺，形成可套在書頁角落的立體愛心口袋。",
+                svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+                    <rect width="300" height="300" fill="#FAF7F0"/>
+                    <polygon points="70,230 230,230 230,90 150,90" fill="#FFFFFF" stroke="#D8D0C0" stroke-width="2"/>
+                    <path d="M150,210 L85,145 A38,38 0 0,1 150,108 A38,38 0 0,1 215,145 Z" fill="#D94E5D"/>
+                    <path d="M150,210 L150,108 A38,38 0 0,1 215,145 Z" fill="#C23B4A"/>
+                    <text x="150" y="275" font-family="sans-serif" font-size="14" fill="#6E6A63" text-anchor="middle">範例作品：愛心角書籤</text>
+                </svg>`
+            },
+            fox: {
+                name: "立體小狐狸",
+                baseType: "square",
+                notes: "雙面橘白雙色正方形色紙（正面橘色、背面白色）。對角線對摺成大三角形後，兩側尖角向上折起形成狐狸雙耳，翻面或外翻折出白色臉頰與橘色額頭，底部尾巴向前折起讓狐狸能穩固站立在桌上。",
+                svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+                    <rect width="300" height="300" fill="#FAF7F0"/>
+                    <circle cx="150" cy="155" r="95" fill="#EBF0EC"/>
+                    <polygon points="135,145 110,235 190,235" fill="#E07A38"/>
+                    <polygon points="180,235 235,190 215,235" fill="#E07A38"/>
+                    <polygon points="222,201 235,190 230,210" fill="#FFFDF9"/>
+                    <polygon points="105,125 100,70 132,105" fill="#C96424"/>
+                    <polygon points="165,125 170,70 138,105" fill="#C96424"/>
+                    <polygon points="105,125 165,125 135,165" fill="#E88646"/>
+                    <polygon points="105,125 125,138 135,165" fill="#FFFDF9"/>
+                    <polygon points="165,125 145,138 135,165" fill="#FFFDF9"/>
+                    <circle cx="135" cy="163" r="4" fill="#2C2A29"/>
+                    <text x="150" y="275" font-family="sans-serif" font-size="14" fill="#6E6A63" text-anchor="middle">範例作品：立體小狐狸</text>
+                </svg>`
+            }
+        };
+
+        const BASE_TYPE_LABELS = {
+            auto: "由 AI 根據圖片自動逆向判讀",
+            square: "正方形色紙（1:1 標準比例）",
+            rectangle: "長方形紙張（A4 / 鈔票比例）",
+            bird_base: "鶴基本形（Bird Base / 雙正方形延伸）",
+            square_base: "雙正方形基礎（Square Base）",
+            waterbomb_base: "雙三角形基礎（Waterbomb Base）",
+            windmill_base: "風車基本形（Windmill Base）",
+            modular: "多張色紙組合（單元組裝 Modular）"
+        };
+
+        // ==========================================
+        // 初始化事件監聽 (點擊、按鈕、拖曳、貼上)
+        // ==========================================
+        function openFilePicker() {
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput) return;
+            fileInput.value = ''; // 重設 value 以確保重複選取同檔案也能觸發 change
+            fileInput.click();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            const reselectFileBtn = document.getElementById('reselectFileBtn');
+
+            if (selectFileBtn) {
+                selectFileBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openFilePicker();
+                });
+            }
+
+            if (reselectFileBtn) {
+                reselectFileBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openFilePicker();
+                });
+            }
+
+            if (dropZone && fileInput) {
+                dropZone.addEventListener('click', (e) => {
+                    // 避免重複觸發 fileInput 本身或內部按鈕
+                    if (e.target === fileInput || e.target.closest('button')) return;
+                    openFilePicker();
+                });
+
+                // 拖曳效果
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropZone.classList.add('border-washi-indigo', 'bg-washi-indigo/5');
+                    });
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropZone.classList.remove('border-washi-indigo', 'bg-washi-indigo/5');
+                    });
+                });
+
+                // 放下檔案
+                dropZone.addEventListener('drop', (e) => {
+                    const files = e.dataTransfer?.files;
+                    if (files && files.length > 0) {
+                        processImageFile(files[0]);
+                    }
+                });
+            }
+
+            // 全域貼上圖片 (Ctrl+V / Cmd+V)
+            window.addEventListener('paste', (e) => {
+                const items = e.clipboardData?.items;
+                if (!items) return;
+                for (let item of items) {
+                    if (item.type.indexOf('image') !== -1) {
+                        const file = item.getAsFile();
+                        processImageFile(file);
+                        showToast('已從剪貼簿貼上摺紙圖片！');
+                        break;
+                    }
+                }
+            });
+        });
+
+        // 載入內建範例圖片並自動填入精準文字描述
+        function loadSample(sampleKey) {
+            const sample = SAMPLE_DATA[sampleKey];
+            if (!sample) return;
+
+            // 自動填入對應的精準文字條件，展現圖文雙重校準效果
+            document.getElementById('workTitleInput').value = sample.name;
+            document.getElementById('baseTypeSelect').value = sample.baseType;
+            document.getElementById('userNotes').value = sample.notes;
+
+            const svgBlob = new Blob([sample.svg], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 400;
+                canvas.height = 400;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, 400, 400);
+                URL.revokeObjectURL(url);
+
+                const pngDataUrl = canvas.toDataURL('image/png');
+                setPreviewImage(pngDataUrl, 'image/png', `範例圖片：${sample.name}`);
+                showToast(`已載入「${sample.name}」圖片與對應文字描述！`);
+            };
+            img.src = url;
+        }
+
+        // 一鍵加入精準提示詞標籤
+        function appendTag(tagText) {
+            const textarea = document.getElementById('userNotes');
+            const currentVal = textarea.value.trim();
+            if (currentVal.includes(tagText)) {
+                showToast('此條件標籤已包含在補充說明中囉！');
+                return;
+            }
+            textarea.value = currentVal ? `${currentVal}；${tagText}` : tagText;
+            textarea.focus();
+        }
+
+        // 處理檔案選擇
+        function handleFileSelect(event) {
+            const file = event.target.files?.[0];
+            if (file) {
+                processImageFile(file);
+            }
+        }
+
+        // 讀取圖片檔案並壓縮/轉 Base64
+        function processImageFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showToast('請上傳有效的圖片格式（JPG、PNG、WebP）', true);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                // 使用 Canvas 適度縮放過大圖片以加快 API 傳輸並確保穩定性
+                const img = new Image();
+                img.onload = () => {
+                    const maxDim = 1024;
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) {
+                            h = Math.round((h * maxDim) / w);
+                            w = maxDim;
+                        } else {
+                            w = Math.round((w * maxDim) / h);
+                            h = maxDim;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+                    setPreviewImage(dataUrl, 'image/jpeg', `已載入：${file.name || '貼上的圖片'}`);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 更新 UI 預覽狀態
+        function setPreviewImage(dataUrl, mimeType, labelText) {
+            currentImageMimeType = mimeType;
+            currentImageBase64 = dataUrl.split(',')[1];
+
+            document.getElementById('imagePreview').src = dataUrl;
+            document.getElementById('imageSourceTag').textContent = labelText;
+            document.getElementById('uploadPlaceholder').classList.add('hidden');
+            document.getElementById('previewContainer').classList.remove('hidden');
+            document.getElementById('clearImgBtn').classList.remove('hidden');
+        }
+
+        // 清除圖片
+        function clearImage() {
+            currentImageBase64 = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('imagePreview').src = '';
+            document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            document.getElementById('previewContainer').classList.add('hidden');
+            document.getElementById('clearImgBtn').classList.add('hidden');
+        }
+
+        // ==========================================
+        // 呼叫 Gemini API 進行圖文雙重精準結構解析
+        // ==========================================
+        async function analyzeOrigami() {
+            if (!currentImageBase64) {
+                showToast('請先上傳一張最喜歡的摺紙圖片，或點選下方的經典範例！', true);
+                return;
+            }
+
+            const workTitle = document.getElementById('workTitleInput').value.trim();
+            const baseTypeKey = document.getElementById('baseTypeSelect').value;
+            const baseTypeDesc = BASE_TYPE_LABELS[baseTypeKey] || BASE_TYPE_LABELS.auto;
+            const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
+            const userNotes = document.getElementById('userNotes').value.trim();
+
+            // 切換 UI 至載入狀態
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            analyzeBtn.disabled = true;
+            analyzeBtn.classList.add('opacity-60', 'pointer-events-none');
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+            document.getElementById('loadingSection').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            const difficultyText = difficulty === 'beginner' 
+                ? '入門詳盡版（請完整拆解所有基礎預摺痕、對角線、中線、基本形轉換，共約 8 到 12 步，不跳步）' 
+                : '進階精簡版（聚焦關鍵幾何轉換、沈摺與立體整形動作，共約 5 到 8 步）';
+
+            const systemPrompt = `你是一位世界級「摺紙大師與幾何結構工程師」。
+你的任務是結合使用者提供的「摺紙成品照片」與「文字補充條件」，進行嚴謹的**結構逆向工程分析**，反推出最精確、符合真實摺紙幾何邏輯的**純圖文逐步教學**。
+【絕對禁令】：嚴禁出現任何影片連結、YouTube 推薦、或「搜尋影片」字眼，只提供純文字與高精準度 SVG 向量圖解。
+
+【圖文雙重校準原則】：
+1. 優先尊重使用者文字補充的條件（如指定作品名稱、起始紙張比例、基礎型如 Bird Base / Waterbomb Base、正反面顏色分佈、中空或卡榫細節），並與圖片視覺特徵交叉驗證。
+2. 先進行逆向診斷：明確指出建議紙張尺寸比例、正反面配色配置、核心基礎型（Base），以及最關鍵的預摺基準線。
+3. 步驟演變連貫性：每一步的幾何形狀必須從前一步自然演變而來（完整紙張 -> 預摺基準線 -> 基礎型 -> 局部收折/反摺 -> 最終成品造型），最後一步必須呈現與照片一致的成品外觀！
+
+【SVG 幾何繪圖最高規範（請嚴格遵守，確保圖解清晰如專業摺紙書籍）】：
+每一步驟都必須提供獨立完整、語法正確的 \`svgCode\`：
+1. 固定使用 \`viewBox="0 0 240 240"\`（不寫死 px 寬高，使 SVG 自適應容器）。
+2. 色紙正反面視覺區分：
+   - 色紙正面（彩色面）：根據照片或文字描述選用和風色彩（如朱紅 \`#D95338\`、靛藍 \`#3A6098\`、橘黃 \`#E68A3E\`、粉紅 \`#D95B72\` 或抹茶綠 \`#638B64\`）。
+   - 色紙背面（白面/內層面）：使用米白色 \`#FFFDF9\` 搭配 \`#9E978B\` 邊框（\`stroke-width="1.5"\`），讓翻摺時露出的背面一目了然！
+   - 紙層輪廓與陰影：重疊紙層使用 \`<polygon>\` 搭配 \`stroke="#2C2A29" stroke-width="1.3" stroke-linejoin="round"\` 清楚勾勒層次。
+3. 國際標準摺紙線條與箭頭符號：
+   - **谷摺線（Valley Fold，向內往前對摺）**：\`stroke="#2B4C7E" stroke-width="2.2" stroke-dasharray="6 4"\`
+   - **山摺線（Mountain Fold，向後反摺）**：\`stroke="#C84B31" stroke-width="2.2" stroke-dasharray="9 3 2 3"\`
+   - **已壓出的參考基準折痕**：\`stroke="#A8A196" stroke-width="1"\`
+   - **摺疊方向箭頭**：使用醒目的曲線或直線 \`<path d="..." fill="none" stroke="#C84B31" stroke-width="2.2"/>\` 搭配實心箭頭 \`<polygon points="..." fill="#C84B31"/>\`，精準從「要移動的角/邊」指向「目標對齊位置」。
+   - **關鍵對齊點標示**：可在目標角或中心點畫上小圓點 \`<circle r="3" fill="#2B4C7E"/>\` 輔助說明對齊位置。
+4. 畫布安全邊距：所有座標請落在 \`x: 35~205, y: 35~205\` 之間，確保圖形與箭頭完整置中不被裁切。`;
+
+            const userPrompt = `請結合這張摺紙圖片與以下文字條件，為我精準解析摺紙步驟：
+- 【指定作品名稱/目標】：${workTitle || '請依圖片辨識命名'}
+- 【指定起始紙張/基礎型】：${baseTypeDesc}
+- 【拆解細膩度】：${difficultyText}
+- 【使用者關鍵特徵補充】：${userNotes || '無額外補充，請依圖片視覺結構精準反推'}
+
+請使用繁體中文輸出結構化的逆向診斷與逐步圖文教學。`;
+
+            const payload = {
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: userPrompt },
+                            {
+                                inlineData: {
+                                    mimeType: currentImageMimeType,
+                                    data: currentImageBase64
+                                }
+                            }
+                        ]
+                    }
+                ],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            title: { type: "STRING", description: "摺紙作品精準名稱（繁體中文）" },
+                            difficultyLabel: { type: "STRING", description: "難度評估，例如：入門級 ★☆☆ 或 進階級 ★★☆" },
+                            paperRecommendation: { type: "STRING", description: "建議紙張尺寸與比例，例如：15×15cm 正方形色紙" },
+                            colorScheme: { type: "STRING", description: "正反面配色建議，例如：單面橘色 / 背面白色" },
+                            coreBase: { type: "STRING", description: "核心基礎型，例如：鶴基本形 (Bird Base) 或 雙三角形基礎" },
+                            keyCreases: { type: "STRING", description: "關鍵基準折痕，例如：對角線十字折痕、花瓣折" },
+                            summary: { type: "STRING", description: "結合圖片與文字條件的結構逆向分析總結（2-3句話）" },
+                            steps: {
+                                type: "ARRAY",
+                                description: "逐步摺紙教學陣列",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        stepNumber: { type: "INTEGER", description: "步驟編號，從 1 開始" },
+                                        stepTitle: { type: "STRING", description: "簡潔明確的步驟標題" },
+                                        actionType: { type: "STRING", description: "主要動作標籤，例如：谷摺、山摺、預摺痕、撐開壓平、內部反摺、翻面、塑形完成" },
+                                        instruction: { type: "STRING", description: "精確白話的文字解說，清楚說明哪個邊/角對齊哪條基準線" },
+                                        tip: { type: "STRING", description: "這一步的幾何對齊小撇步或易錯提醒" },
+                                        svgCode: { type: "STRING", description: "完整可渲染的 <svg viewBox=\"0 0 240 240\">...</svg> 程式碼" }
+                                    },
+                                    required: ["stepNumber", "stepTitle", "actionType", "instruction", "tip", "svgCode"]
+                                }
+                            }
+                        },
+                        required: ["title", "difficultyLabel", "paperRecommendation", "colorScheme", "coreBase", "keyCreases", "summary", "steps"]
+                    }
+                }
+            };
+
+            try {
+                const responseData = await fetchGeminiWithBackoff(payload);
+                const rawText = responseData?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!rawText) {
+                    throw new Error("AI 回傳內容為空");
+                }
+
+                const parsed = JSON.parse(rawText);
+                if (!parsed.steps || parsed.steps.length === 0) {
+                    throw new Error("未能解析出有效步驟");
+                }
+
+                currentTutorialData = parsed;
+                currentStepIndex = 0;
+                renderTutorialResult();
+
+            } catch (err) {
+                console.error(err);
+                showToast('解析過程中發生了一點小狀況，請稍後再試或調整文字描述。', true);
+                document.getElementById('loadingSection').classList.add('hidden');
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.classList.remove('opacity-60', 'pointer-events-none');
+            }
+        }
+
+        // 指數退避呼叫 Gemini API
+        async function fetchGeminiWithBackoff(payload, maxRetries = 4) {
+            const apiKey = ""; // 執行環境自動注入
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            let delay = 1000;
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    if (attempt === maxRetries) throw error;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        // ==========================================
+        // 渲染圖文教學結果與逆向診斷卡
+        // ==========================================
+        function renderTutorialResult() {
+            const data = currentTutorialData;
+            if (!data) return;
+
+            document.getElementById('loadingSection').classList.add('hidden');
+            document.getElementById('resultSection').classList.remove('hidden');
+
+            // 填入總覽與結構逆向診斷四宮格
+            document.getElementById('resultTitle').textContent = data.title;
+            document.getElementById('resultDifficultyBadge').textContent = `難度：${data.difficultyLabel}`;
+            document.getElementById('resultStepCountBadge').textContent = `共 ${data.steps.length} 步驟`;
+            document.getElementById('resultSummary').textContent = data.summary;
+
+            document.getElementById('diagPaperSize').textContent = data.paperRecommendation || '15×15cm 正方形色紙';
+            document.getElementById('diagColorScheme').textContent = data.colorScheme || '單面彩色 / 背面白色';
+            document.getElementById('diagCoreBase').textContent = data.coreBase || '基礎幾何折疊';
+            document.getElementById('diagKeyCreases').textContent = data.keyCreases || '對角線與中線基準折';
+
+            // 渲染步驟快捷點
+            renderStepDots();
+
+            // 渲染逐步模式與全覽模式
+            renderCurrentStepCard();
+            renderAllStepsGrid();
+
+            // 預設顯示目前選擇的檢視模式
+            setViewMode(currentViewMode);
+
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // 淨化並確保 SVG 可自適應容器大小
+        function sanitizeSvg(svgString) {
+            if (!svgString || !svgString.includes('<svg')) {
+                return `<svg viewBox="0 0 240 240" class="w-full h-full"><text x="120" y="120" text-anchor="middle" fill="#6E6A63" font-size="14">圖解載入中</text></svg>`;
+            }
+            // 移除可能寫死的寬高屬性，強制使用 viewBox 自適應
+            let cleaned = svgString
+                .replace(/<svg([^>]*)width="[^"]*"/i, '<svg$1')
+                .replace(/<svg([^>]*)height="[^"]*"/i, '<svg$1');
+            
+            if (!cleaned.includes('viewBox')) {
+                cleaned = cleaned.replace('<svg', '<svg viewBox="0 0 240 240"');
+            }
+            cleaned = cleaned.replace('<svg', '<svg class="w-full h-full max-w-[260px] max-h-[260px] mx-auto drop-shadow-xs"');
+            return cleaned;
+        }
+
+        // 取得動作標籤樣式
+        function getActionBadgeStyle(actionType) {
+            const text = actionType || '';
+            if (text.includes('谷摺')) return 'bg-washi-indigo/15 text-washi-indigo border-washi-indigo/30';
+            if (text.includes('山摺')) return 'bg-washi-vermilion/15 text-washi-vermilion border-washi-vermilion/30';
+            if (text.includes('翻面')) return 'bg-washi-matcha/15 text-washi-matcha border-washi-matcha/30';
+            return 'bg-washi-ochre/20 text-washi-ink border-washi-ochre/40';
+        }
+
+        // 渲染步驟跳轉數字鈕
+        function renderStepDots() {
+            const container = document.getElementById('stepDotsContainer');
+            const steps = currentTutorialData.steps;
+            container.innerHTML = steps.map((step, idx) => {
+                const isActive = idx === currentStepIndex;
+                const isDone = idx < currentStepIndex;
+                let btnClass = 'w-8 h-8 rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer border ';
+                if (isActive) {
+                    btnClass += 'bg-washi-indigo text-white border-washi-indigo shadow-xs scale-105';
+                } else if (isDone) {
+                    btnClass += 'bg-washi-indigo/15 text-washi-indigo border-washi-indigo/30';
+                } else {
+                    btnClass += 'bg-washi-bg text-washi-muted border-washi-border hover:border-washi-indigo/50';
+                }
+                return `<button onclick="goToStep(${idx})" class="${btnClass}" title="步驟 ${step.stepNumber}: ${step.stepTitle}">${step.stepNumber}</button>`;
+            }).join('');
+        }
+
+        // 渲染單一步驟大卡片 (逐步翻頁模式)
+        function renderCurrentStepCard() {
+            const steps = currentTutorialData.steps;
+            const total = steps.length;
+            const step = steps[currentStepIndex];
+
+            // 更新進度條
+            const percent = Math.round(((currentStepIndex + 1) / total) * 100);
+            document.getElementById('stepProgressText').textContent = `第 ${currentStepIndex + 1} 步 / 共 ${total} 步`;
+            document.getElementById('stepPercentText').textContent = `${percent}% 完成`;
+            document.getElementById('stepProgressBar').style.width = `${percent}%`;
+
+            // 更新上/下一步按鈕狀態
+            document.getElementById('prevStepBtn').disabled = currentStepIndex === 0;
+            const nextBtn = document.getElementById('nextStepBtn');
+            const nextBtnText = document.getElementById('nextStepBtnText');
+            if (currentStepIndex === total - 1) {
+                nextBtnText.textContent = '🎉 完成作品！重新檢視';
+                nextBtn.classList.remove('bg-washi-indigo', 'hover:bg-[#213b63]');
+                nextBtn.classList.add('bg-washi-matcha', 'hover:bg-[#4a694b]');
+            } else {
+                nextBtnText.textContent = '下一步';
+                nextBtn.classList.add('bg-washi-indigo', 'hover:bg-[#213b63]');
+                nextBtn.classList.remove('bg-washi-matcha', 'hover:bg-[#4a694b]');
+            }
+
+            const card = document.getElementById('singleStepCard');
+            card.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-12">
+                    <!-- 左側 SVG 摺紙圖解區 -->
+                    <div class="md:col-span-5 cutting-mat-bg p-6 sm:p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-washi-border min-h-[290px]">
+                        <div class="w-full aspect-square max-w-[260px] flex items-center justify-center">
+                            ${sanitizeSvg(step.svgCode)}
+                        </div>
+                        <span class="mt-3 text-[11px] font-medium text-washi-muted bg-white/80 px-2.5 py-0.5 rounded-full border border-washi-border/60">
+                            步驟 ${step.stepNumber} 幾何示意圖
+                        </span>
+                    </div>
+
+                    <!-- 右側文字解說與單步追問 -->
+                    <div class="md:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-6">
+                        <div class="space-y-4">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex flex-wrap items-center gap-2.5">
+                                    <span class="px-3 py-1 rounded-lg bg-washi-ink text-white font-serif font-bold text-sm">
+                                        步驟 ${step.stepNumber}
+                                    </span>
+                                    <span class="px-2.5 py-1 rounded-lg border text-xs font-bold ${getActionBadgeStyle(step.actionType)}">
+                                        ${step.actionType}
+                                    </span>
+                                </div>
+
+                                <button onclick="openClarifyModal(${currentStepIndex})" class="no-print inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-washi-indigo/30 bg-washi-indigo/5 hover:bg-washi-indigo/15 text-washi-indigo text-xs font-bold transition cursor-pointer">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>這一步看不懂？文字追問微調</span>
+                                </button>
+                            </div>
+
+                            <h3 class="font-serif text-xl sm:text-2xl font-bold text-washi-ink leading-snug">
+                                ${step.stepTitle}
+                            </h3>
+
+                            <p class="text-base text-washi-ink/90 leading-relaxed">
+                                ${step.instruction}
+                            </p>
+                        </div>
+
+                        <!-- 小撇步區塊 -->
+                        <div class="p-4 rounded-xl bg-washi-ochre/12 border border-washi-ochre/30 flex items-start gap-3">
+                            <span class="text-lg shrink-0 mt-0.5">💡</span>
+                            <div>
+                                <h4 class="text-xs font-bold text-washi-ink uppercase tracking-wider">手作小撇步 / 精準對齊提醒</h4>
+                                <p class="text-sm text-washi-ink/85 mt-1 leading-relaxed">${step.tip}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 渲染全覽列表模式 (一次瀏覽所有步驟)
+        function renderAllStepsGrid() {
+            const container = document.getElementById('allViewContainer');
+            const steps = currentTutorialData.steps;
+
+            container.innerHTML = steps.map((step, idx) => `
+                <article class="washi-card rounded-2xl overflow-hidden flex flex-col justify-between hover:shadow-md transition">
+                    <div>
+                        <!-- 頂部 SVG 示意圖 -->
+                        <div class="cutting-mat-bg p-5 border-b border-washi-border flex items-center justify-center relative">
+                            <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-washi-ink text-white font-serif font-bold text-xs">
+                                步驟 ${step.stepNumber}
+                            </span>
+                            <span class="absolute top-3 right-3 px-2.5 py-1 rounded-lg border text-xs font-bold ${getActionBadgeStyle(step.actionType)}">
+                                ${step.actionType}
+                            </span>
+                            <div class="w-48 h-48 flex items-center justify-center pt-4">
+                                ${sanitizeSvg(step.svgCode)}
+                            </div>
+                        </div>
+
+                        <!-- 文字解說 -->
+                        <div class="p-5 space-y-3">
+                            <h3 class="font-serif text-lg font-bold text-washi-ink">
+                                ${step.stepTitle}
+                            </h3>
+                            <p class="text-sm text-washi-ink/90 leading-relaxed">
+                                ${step.instruction}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 底部小撇步與互動按鈕 -->
+                    <div class="px-5 pb-5 space-y-3">
+                        <div class="p-3 rounded-xl bg-washi-ochre/12 border border-washi-ochre/25 text-xs text-washi-ink/85 flex items-start gap-2">
+                            <span class="shrink-0">💡</span>
+                            <span><strong>小撇步：</strong>${step.tip}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 no-print">
+                            <button onclick="openClarifyModal(${idx})" class="py-2 px-2 rounded-lg border border-washi-indigo/30 bg-washi-indigo/5 hover:bg-washi-indigo/15 text-xs font-bold text-washi-indigo transition cursor-pointer">
+                                💬 追問微調此步
+                            </button>
+                            <button onclick="goToStep(${idx}); setViewMode('step');" class="py-2 px-2 rounded-lg border border-washi-border hover:bg-washi-bg text-xs font-bold text-washi-ink transition cursor-pointer">
+                                🔍 單步放大檢視
+                            </button>
+                        </div>
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        // ==========================================
+        // 單步追問與精準微調功能
+        // ==========================================
+        function openClarifyModal(stepIdx) {
+            if (!currentTutorialData) return;
+            clarifyingStepIndex = stepIdx;
+            const step = currentTutorialData.steps[stepIdx];
+
+            document.getElementById('clarifyStepBadge').textContent = `步驟 ${step.stepNumber}`;
+            document.getElementById('clarifyCurrentTitle').textContent = step.stepTitle;
+            document.getElementById('clarifyCurrentDesc').textContent = step.instruction;
+            document.getElementById('clarifyQuestionInput').value = '';
+            document.getElementById('clarifyModal').classList.remove('hidden');
+            document.getElementById('clarifyQuestionInput').focus();
+        }
+
+        function closeClarifyModal() {
+            document.getElementById('clarifyModal').classList.add('hidden');
+            clarifyingStepIndex = null;
+        }
+
+        function setClarifyPreset(text) {
+            document.getElementById('clarifyQuestionInput').value = text;
+        }
+
+        async function submitStepClarification() {
+            if (clarifyingStepIndex === null || !currentTutorialData) return;
+            const question = document.getElementById('clarifyQuestionInput').value.trim();
+            if (!question) {
+                showToast('請輸入您對這一步的疑問或補充說明！', true);
+                return;
+            }
+
+            const btn = document.getElementById('submitClarifyBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span>正在重新繪製精準圖解...</span>`;
+
+            const targetStep = currentTutorialData.steps[clarifyingStepIndex];
+            const prevStep = clarifyingStepIndex > 0 ? currentTutorialData.steps[clarifyingStepIndex - 1] : null;
+            const nextStep = clarifyingStepIndex < currentTutorialData.steps.length - 1 ? currentTutorialData.steps[clarifyingStepIndex + 1] : null;
+
+            const prompt = `你是一位專業摺紙圖解大師。使用者正在製作「${currentTutorialData.title}」（核心基礎型：${currentTutorialData.coreBase}，配色：${currentTutorialData.colorScheme}）。
+使用者在「步驟 ${targetStep.stepNumber}：${targetStep.stepTitle}」卡關了，並提出以下追問與補充條件：
+【使用者追問】：${question}
+
+【上下文參考】：
+- 前一步驟：${prevStep ? `步驟 ${prevStep.stepNumber} (${prevStep.stepTitle}) - ${prevStep.instruction}` : '無（此為第 1 步）'}
+- 原本此步驟說明：${targetStep.instruction}
+- 下一步驟：${nextStep ? `步驟 ${nextStep.stepNumber} (${nextStep.stepTitle}) - ${nextStep.instruction}` : '無（此為最後一步）'}
+
+請針對使用者的疑問，重新推演這個階段的動作。你可以回傳 1 個「大幅改良、標示更精準的步驟」，或者若使用者要求拆細，回傳 2 個「更易懂的連續過渡步驟」。
+每個步驟都必須包含極度清晰、符合幾何演變的 \`<svg viewBox="0 0 240 240">...</svg>\` 圖解（谷摺藍色虛線 #2B4C7E、山摺朱紅點劃線 #C84B31、醒目方向箭頭與正面/背面色差），嚴禁任何影片建議。`;
+
+            const payload = {
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: prompt },
+                            ...(currentImageBase64 ? [{
+                                inlineData: {
+                                    mimeType: currentImageMimeType,
+                                    data: currentImageBase64
+                                }
+                            }] : [])
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            refinedSteps: {
+                                type: "ARRAY",
+                                description: "改良或細分後的 1 到 2 個精準步驟",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        stepTitle: { type: "STRING" },
+                                        actionType: { type: "STRING" },
+                                        instruction: { type: "STRING" },
+                                        tip: { type: "STRING" },
+                                        svgCode: { type: "STRING" }
+                                    },
+                                    required: ["stepTitle", "actionType", "instruction", "tip", "svgCode"]
+                                }
+                            }
+                        },
+                        required: ["refinedSteps"]
+                    }
+                }
+            };
+
+            try {
+                const res = await fetchGeminiWithBackoff(payload);
+                const rawText = res?.candidates?.[0]?.content?.parts?.[0]?.text;
+                const parsed = JSON.parse(rawText);
+
+                if (parsed?.refinedSteps && parsed.refinedSteps.length > 0) {
+                    // 將原本的步驟替換為改良/細分後的步驟，並重新編排 stepNumber
+                    currentTutorialData.steps.splice(clarifyingStepIndex, 1, ...parsed.refinedSteps);
+                    currentTutorialData.steps.forEach((s, i) => {
+                        s.stepNumber = i + 1;
+                    });
+
+                    closeClarifyModal();
+                    renderTutorialResult();
+                    showToast(`已根據您的追問更新第 ${clarifyingStepIndex + 1} 步的圖解與說明！`);
+                } else {
+                    throw new Error("未能生成改良步驟");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('微調推演失敗，請稍後再試一次。', true);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // 列印 / 匯出純圖文教學單
+        function printTutorial() {
+            if (!currentTutorialData) return;
+            window.print();
+        }
+
+        // ==========================================
+        // 互動控制函式
+        // ==========================================
+        function changeStep(delta) {
+            if (!currentTutorialData) return;
+            const total = currentTutorialData.steps.length;
+            if (currentStepIndex + delta >= total) {
+                currentStepIndex = 0; // 完成後點選回到第一步
+                showToast('已回到第 1 步，方便您再次複習！');
+            } else if (currentStepIndex + delta >= 0) {
+                currentStepIndex += delta;
+            }
+            renderStepDots();
+            renderCurrentStepCard();
+        }
+
+        function goToStep(index) {
+            if (!currentTutorialData) return;
+            currentStepIndex = index;
+            renderStepDots();
+            renderCurrentStepCard();
+        }
+
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            const stepBtn = document.getElementById('modeStepBtn');
+            const allBtn = document.getElementById('modeAllBtn');
+            const stepContainer = document.getElementById('stepViewContainer');
+            const allContainer = document.getElementById('allViewContainer');
+
+            if (mode === 'step') {
+                stepBtn.className = 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-white text-washi-indigo shadow-sm cursor-pointer';
+                allBtn.className = 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 text-washi-muted hover:text-washi-ink cursor-pointer';
+                stepContainer.classList.remove('hidden');
+                allContainer.classList.add('hidden');
+            } else {
+                allBtn.className = 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-white text-washi-indigo shadow-sm cursor-pointer';
+                stepBtn.className = 'px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 text-washi-muted hover:text-washi-ink cursor-pointer';
+                allContainer.classList.remove('hidden');
+                stepContainer.classList.add('hidden');
+            }
+        }
+
+        function toggleLegendModal() {
+            const modal = document.getElementById('legendModal');
+            modal.classList.toggle('hidden');
+        }
+
+        // 鍵盤左右鍵支援翻頁
+        window.addEventListener('keydown', (e) => {
+            if (!currentTutorialData || currentViewMode !== 'step') return;
+            if (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT') return;
+            if (e.key === 'ArrowRight') changeStep(1);
+            if (e.key === 'ArrowLeft') changeStep(-1);
+        });
+
+        // 輕量提示框
+        let toastTimeout = null;
+        function showToast(message, isError = false) {
+            const box = document.getElementById('toastBox');
+            const msgEl = document.getElementById('toastMessage');
+            const iconEl = document.getElementById('toastIcon');
+
+            msgEl.textContent = message;
+            iconEl.textContent = isError ? '⚠️' : '✨';
+            box.classList.remove('hidden');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                box.classList.add('hidden');
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
